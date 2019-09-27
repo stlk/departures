@@ -1,0 +1,19 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+flask = "*"
+"rfc3339" = "*"
+ansicolors = "*"
+requests = "*"
+psycopg2-binary = "*"
+
+[dev-packages]
+pytest = "*"
+black = "==19.3b0"
+pre-commit = "*"
+
+[scripts]
+dev = "flask run"

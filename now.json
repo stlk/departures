@@ -1,0 +1,8 @@
+{
+    "version": 2,
+    "name": "departures",
+    "alias": "departures",
+    "env": {
+        "DATABASE_URL": "@departures-database-url"
+    }
+}
