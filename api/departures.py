@@ -39,8 +39,11 @@ END
 order by departure_time;
 """
 
-def convert(item):
-    return (item[0], item[1], str(item[2]), item[3])
+def dictfetchall(cursor):
+    "Return all rows from a cursor as a dict"
+    columns = [col[0] for col in cursor.description]
+    return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
 
 @app.route("/api/departures", methods=["GET"])
 def api():
@@ -51,9 +54,8 @@ def api():
     cursor = connection.cursor()
     try:
         cursor.execute(QUERY, {"location": f"POINT({longitude} {latitude})"})
-        data = cursor.fetchall()
+        data = dictfetchall(cursor)
     finally:
         cursor.close()
         connection.close()
-    data = [convert(item) for item in data]
     return jsonify(data)

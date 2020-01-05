@@ -31,10 +31,10 @@ function HomePage() {
       {departures.loading && <div>...</div>}
       {departures.error && <div>Error: {departures.error.message}</div>}
       {departures.result
-        ? Object.entries(groupBy(departures.result, 3)).map(([key,group]) => (
+        ? Object.entries(groupBy(departures.result, 'stop_name')).map(([key,group]) => (
           <div key={key}>
             <h4>{key}</h4>
-            {group.filter(([route_short_name, trip_headsign, departure_time, stop_name])=> trip_headsign !== stop_name).map(([route_short_name, trip_headsign, departure_time, stop_name]) =>(
+            {group.filter(({route_short_name, trip_headsign, departure_time, stop_name})=> trip_headsign !== stop_name).map(({route_short_name, trip_headsign, departure_time, stop_name}) =>(
             <p key={route_short_name + stop_name + departure_time}>
               <em>{route_short_name} - {trip_headsign}</em> {departure_time}
           </p>
