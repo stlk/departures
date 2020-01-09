@@ -17,15 +17,22 @@ struct Departure : Decodable {
     let trip_headsign: String
 }
 
+
+struct Section {
+    let stop_name: String
+    let departures: [Departure]
+    var collapsed: Bool
+}
+
 class TodayViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
     @IBOutlet weak var table: UITableView!
     
     // This is used to indicate whether an update of the today widget is required or not
     private var updateResult = NCUpdateResult.noData
     
-    fileprivate let kCellHeight : CGFloat = 120.0
+    fileprivate let kCellHeight : CGFloat = 30
     lazy private var locManager = CLLocationManager()
-    private var departuresSections : [String : [Departure]] = [:]
+    private var departuresSections : [Section] = []
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -33,7 +40,7 @@ class TodayViewController: UIViewController, UITableViewDelegate, UITableViewDat
         
         if #available(iOSApplicationExtension 10.0, *)
         {
-            self.extensionContext?.widgetLargestAvailableDisplayMode = .expanded
+            self.extensionContext?.widgetLargestAvailableDisplayMode = .compact
         }
     }
     
@@ -58,10 +65,15 @@ class TodayViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 if let urlContent = data {
                     do {
                         let json = try JSONDecoder().decode([Departure].self, from: urlContent)
-                        self.departuresSections = Dictionary(grouping: json, by: { $0.stop_name })
+                        self.departuresSections = Dictionary(grouping: json, by: { $0.stop_name }).compactMap({ (arg0
+                            ) -> Section in
+                            let (key, value) = arg0
+                            return Section(stop_name: key, departures: value, collapsed: true)
+                        })
                         print(self.departuresSections)
                         DispatchQueue.main.sync(execute: {
                             self.table.reloadData()
+                            self.extensionContext?.widgetLargestAvailableDisplayMode = NCWidgetDisplayMode.expanded
                         })
                     } catch {
                         print("JSON Processing Failed")
@@ -82,18 +94,17 @@ class TodayViewController: UIViewController, UITableViewDelegate, UITableViewDat
         {
             return 1
         }
-        let valueArray = [[Departure]](self.departuresSections.values)
-        return valueArray[section].count
+        return self.departuresSections[section].collapsed ? 0: self.departuresSections[section].departures.count
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {
         self.departuresSections.count
     }
     
-    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
-        let keyArray = [String](self.departuresSections.keys)
-        return keyArray[section]
-    }
+//  Not needed for collapsible section header
+//    func tableView(_ tableView: UITableView, titleForHeaderInSection section: Int) -> String? {
+//        return self.departuresSections[section].stop_name
+//    }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
@@ -103,8 +114,7 @@ class TodayViewController: UIViewController, UITableViewDelegate, UITableViewDat
             return cell
         }
 
-        let valueArray = [[Departure]](self.departuresSections.values)
-        let departure = valueArray[indexPath.section][indexPath.row]
+        let departure = self.departuresSections[indexPath.section].departures[indexPath.row]
         
         cell.textLabel?.text = departure.route_short_name + " - " + departure.trip_headsign
         cell.detailTextLabel?.text = departure.departure_time
@@ -120,8 +130,41 @@ class TodayViewController: UIViewController, UITableViewDelegate, UITableViewDat
         }
     }
 
+    func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
+        let header = tableView.dequeueReusableHeaderFooterView(withIdentifier: "header") as? CollapsibleTableViewHeader ?? CollapsibleTableViewHeader(reuseIdentifier: "header")
+        
+        header.titleLabel.text = self.departuresSections[section].stop_name
+        header.arrowLabel.text = "›"
+        header.setCollapsed(self.departuresSections[section].collapsed)
+        
+        header.section = section
+        header.delegate = self
+        
+        return header
+    }
+    
+//    func tableView(_ tableView: UITableView, heightForHeaderInSection section: Int) -> CGFloat {
+//        return 44.0
+//    }
 }
 
+
+//
+// MARK: - Section Header Delegate
+//
+extension TodayViewController: CollapsibleTableViewHeaderDelegate {
+    
+    func toggleSection(_ header: CollapsibleTableViewHeader, section: Int) {
+        let collapsed = !self.departuresSections[section].collapsed
+        
+        // Toggle collapse
+        self.departuresSections[section].collapsed = collapsed
+        header.setCollapsed(collapsed)
+        
+        table.reloadSections(NSIndexSet(index: section) as IndexSet, with: .automatic)
+    }
+    
+}
 
 
 typealias WidgetProvider = TodayViewController
@@ -143,8 +186,8 @@ extension WidgetProvider: NCWidgetProviding {
     {
         if activeDisplayMode == .expanded
         {
-            let total_count = [[Departure]](self.departuresSections.values).reduce(0, { sum, departures in
-                sum + departures.count + 1
+            let total_count = self.departuresSections.reduce(0, { sum, section in
+                sum + (section.collapsed ? 0 : section.departures.count) + 1
             })
             preferredContentSize = CGSize(width: 0.0, height: kCellHeight * CGFloat(total_count))
         }
