@@ -33,6 +33,8 @@ class TodayViewController: UIViewController, UITableViewDelegate, UITableViewDat
     fileprivate let kCellHeight : CGFloat = 30
     lazy private var locManager = CLLocationManager()
     private var departuresSections : [Section] = []
+    @IBOutlet weak var spinner: UIActivityIndicatorView!
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -47,15 +49,15 @@ class TodayViewController: UIViewController, UITableViewDelegate, UITableViewDat
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         
-        locManager.desiredAccuracy = kCLLocationAccuracyBest
+        locManager.desiredAccuracy = kCLLocationAccuracyHundredMeters
         locManager.requestWhenInUseAuthorization()
         locManager.requestLocation()
     }
     
     
     func getDepartures(latitude: String, longitude: String) {
-        if let url = URL(string: "https://departures.stlk.now.sh/api/departures?latitude=" + latitude + "&longitude=" + longitude) {
-
+        spinner.startAnimating()
+        if let url = URL(string: "https://departures.now.sh/api/departures?latitude=" + latitude + "&longitude=" + longitude) {
         let request = NSMutableURLRequest(url: url)
         let task = URLSession.shared.dataTask(with: request as URLRequest) {
             data, response, error in
@@ -72,6 +74,7 @@ class TodayViewController: UIViewController, UITableViewDelegate, UITableViewDat
                         })
                         print(self.departuresSections)
                         DispatchQueue.main.sync(execute: {
+                            self.spinner.stopAnimating()
                             self.table.reloadData()
                             self.extensionContext?.widgetLargestAvailableDisplayMode = NCWidgetDisplayMode.expanded
                         })
@@ -90,15 +93,11 @@ class TodayViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if self.departuresSections.count == 0
-        {
-            return 1
-        }
         return self.departuresSections[section].collapsed ? 0: self.departuresSections[section].departures.count
     }
     
     func numberOfSections(in tableView: UITableView) -> Int {
-        self.departuresSections.count
+        return self.departuresSections.count
     }
     
 //  Not needed for collapsible section header
@@ -108,12 +107,6 @@ class TodayViewController: UIViewController, UITableViewDelegate, UITableViewDat
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "Cell", for: indexPath)
-        if self.departuresSections.count == 0
-        {
-            cell.textLabel?.text = "loading..."
-            return cell
-        }
-
         let departure = self.departuresSections[indexPath.section].departures[indexPath.row]
         
         cell.textLabel?.text = departure.route_short_name + " - " + departure.trip_headsign

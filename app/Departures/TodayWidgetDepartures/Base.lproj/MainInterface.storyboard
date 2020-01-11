@@ -49,6 +49,10 @@
                                     <outlet property="delegate" destination="M4Y-Lb-cyx" id="D9r-Zq-OAh"/>
                                 </connections>
                             </tableView>
+                            <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" fixedFrame="YES" hidesWhenStopped="YES" style="large" translatesAutoresizingMaskIntoConstraints="NO" id="HZo-NX-9uC">
+                                <rect key="frame" x="150" y="17" width="20" height="20"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                            </activityIndicatorView>
                         </subviews>
                         <constraints>
                             <constraint firstItem="vh5-hX-TAF" firstAttribute="bottom" secondItem="ssy-KU-ocm" secondAttribute="bottom" id="0nf-C2-ExO"/>
@@ -62,6 +66,7 @@
                     <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
                     <size key="freeformSize" width="320" height="37"/>
                     <connections>
+                        <outlet property="spinner" destination="HZo-NX-9uC" id="wlz-Jx-Jhr"/>
                         <outlet property="table" destination="vh5-hX-TAF" id="rV9-2e-7yq"/>
                     </connections>
                 </viewController>
